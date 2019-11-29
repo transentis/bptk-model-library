@@ -1,0 +1,4 @@
+.ipynb_checkpoints
+commodity_pricing/simulation_models/__pycache__
+bptk_py.log
+customer_acquisition/simulation_models/__pycache__
