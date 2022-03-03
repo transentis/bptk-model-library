@@ -56,9 +56,9 @@ def LERP(x,points):
 class simulation_model():
     def __init__(self):
         # Simulation Settings
-        self.dt = 1.0
-        self.starttime = 0.0
-        self.stoptime = 60.0
+        self.dt = 1
+        self.starttime = 1.0
+        self.stoptime = 61.0
         self.units = 'Months'
         self.method = 'Euler'
         self.equations = {
@@ -66,41 +66,21 @@ class simulation_model():
         # Stocks
         
     
-        'advertisingCustomers'          : lambda t: ( (0.0) if ( t  <=  self.starttime ) else (self.memoize('advertisingCustomers',t-self.dt) + self.dt * ( self.memoize('advCustIn',t-self.dt) )) ),
-        'customers'          : lambda t: ( (self.memoize('initialCustomers', t)) if ( t  <=  self.starttime ) else (self.memoize('customers',t-self.dt) + self.dt * ( self.memoize('customerAcquisition',t-self.dt) )) ),
-        'profit'          : lambda t: ( ( - self.memoize('initialInvestmentInService', t)) if ( t  <=  self.starttime ) else (self.memoize('profit',t-self.dt) + self.dt * ( self.memoize('earnings',t-self.dt) - ( self.memoize('spending',t-self.dt) ) )) ),
-        'referralCustomers'          : lambda t: ( (0.0) if ( t  <=  self.starttime ) else (self.memoize('referralCustomers',t-self.dt) + self.dt * ( self.memoize('referralCustIn',t-self.dt) )) ),
+        'anyStock'          : lambda t: ( (0.0) if ( t  <=  self.starttime ) else (self.memoize('anyStock',t-self.dt) + self.dt * ( self.memoize('inflow',t-self.dt) - ( self.memoize('outflow',t-self.dt) ) )) ),
         
     
         # Flows
-        'advCustIn'             : lambda t: max([0 , self.memoize('acquisitionThroughAdvertising', t)]),
-        'customerAcquisition'             : lambda t: max([0 , self.memoize('acquisitionThroughAdvertising', t) + self.memoize('acquisitionThroughReferrals', t)]),
-        'earnings'             : lambda t: max([0 , self.memoize('serviceMargin', t) * self.memoize('serviceFee', t) * self.memoize('customers', t)]),
-        'referralCustIn'             : lambda t: max([0 , self.memoize('acquisitionThroughReferrals', t)]),
-        'spending'             : lambda t: max([0 , ( (self.memoize('acquisitionThroughReferrals', t) * ( self.memoize('referralFreeMonths', t) * self.memoize('serviceFee', t) / self.memoize('referrals', t) ) + self.memoize('referralAdvertisingCost', t) + self.memoize('classicalAdvertisingCost', t)) if (self.memoize('referrals', t) > 0.0) else (self.memoize('classicalAdvertisingCost', t)) )]),
+        'inflow'             : lambda t: max([0 , self.memoize('anyFunction', t)]),
+        'outflow'             : lambda t: max([0 , self.delay( self.memoize('inflow', ( t - (self.memoize('delayTime', t)) )),self.memoize('delayTime', t),self.memoize('initialValue', t),t)]),
         
     
         # converters
-        'acquisitionThroughAdvertising'      : lambda t: self.memoize('potentialCustomersReachedThroughAdvertising', t) * self.memoize('advertisingSuccess%', t) / 100.0,
-        'acquisitionThroughReferrals'      : lambda t: self.memoize('referrals', t) * self.memoize('customers', t) * ( 1.0 - self.memoize('marketSaturation%', t) / 100.0 ) * self.memoize('referralProgramAdoption%', t) / 100.0,
-        'advertisingSuccess%'      : lambda t: 0.1,
-        'classicalAdvertisingCost'      : lambda t: 10000.0,
-        'initialCustomers'      : lambda t: 0.0,
-        'initialInvestmentInService'      : lambda t: 1000000.0,
-        'marketSaturation%'      : lambda t: 100.0 * self.memoize('customers', t) / self.memoize('targetMarket', t),
-        'personsReachedPerEuro'      : lambda t: 100.0,
-        'potentialCustomersReachedThroughAdvertising'      : lambda t: self.memoize('personsReachedPerEuro', t) * self.memoize('classicalAdvertisingCost', t) * self.memoize('targetCustomerDilution%', t) / 100.0 * ( 1.0 - self.memoize('marketSaturation%', t) / 100.0 ),
-        'referralAdvertisingCost'      : lambda t: 10000.0,
-        'referralFreeMonths'      : lambda t: 3.0,
-        'referralProgramAdoption%'      : lambda t: 30.0,
-        'referrals'      : lambda t: 0.0,
-        'serviceFee'      : lambda t: 10.0,
-        'serviceMargin'      : lambda t: 0.5,
-        'targetCustomerDilution%'      : lambda t: 80.0,
-        'targetMarket'      : lambda t: 6000000.0,
+        'delayTime'      : lambda t: 6.0,
+        'initialValue'      : lambda t: 0.0,
         
     
         # gf
+        'anyFunction' : lambda t: LERP(  t , self.points['anyFunction']),
         
     
         #constants
@@ -110,11 +90,15 @@ class simulation_model():
         }
     
         self.points = {
-            
+            'anyFunction' :  [(1.0, 35.9322033898305), (4.0, 38.3050847457627), (7.0, 40.3389830508475), (10.0, 41.3559322033898), (13.0, 42.7118644067797), (16.0, 45.4237288135593), (19.0, 52.5423728813559), (22.0, 74.5762711864407), (25.0, 80.0), (28.0, 78.9830508474576), (31.0, 77.2881355932203), (34.0, 73.5593220338983), (37.0, 70.1694915254237), (40.0, 48.135593220339), (43.0, 48.135593220339), (46.0, 51.1864406779661), (49.0, 54.2372881355932), (52.0, 84.406779661017), (55.0, 90.1694915254237), (58.0, 91.5254237288136), (61.0, 91.5254237288136)]  , 
         }
     
     
         self.dimensions = {
+        	'subscriptSet1': {
+                'labels': [ '1'  ],
+                'variables': [  ],
+            },
         	'': {
                 'labels': [  ],
                 'variables': [  ],
@@ -123,10 +107,10 @@ class simulation_model():
                 
         self.dimensions_order = {}     
     
-        self.stocks = ['advertisingCustomers',   'customers',   'profit',   'referralCustomers'  ]
-        self.flows = ['advCustIn',   'customerAcquisition',   'earnings',   'referralCustIn',   'spending'  ]
-        self.converters = ['acquisitionThroughAdvertising',   'acquisitionThroughReferrals',   'advertisingSuccess%',   'classicalAdvertisingCost',   'initialCustomers',   'initialInvestmentInService',   'marketSaturation%',   'personsReachedPerEuro',   'potentialCustomersReachedThroughAdvertising',   'referralAdvertisingCost',   'referralFreeMonths',   'referralProgramAdoption%',   'referrals',   'serviceFee',   'serviceMargin',   'targetCustomerDilution%',   'targetMarket'  ]
-        self.gf = []
+        self.stocks = ['anyStock'  ]
+        self.flows = ['inflow',   'outflow'  ]
+        self.converters = ['delayTime',   'initialValue'  ]
+        self.gf = ['anyFunction'  ]
         self.constants= []
         self.events = [
             ]

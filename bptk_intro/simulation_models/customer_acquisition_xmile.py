@@ -66,38 +66,27 @@ class simulation_model():
         # Stocks
         
     
-        'advertisingCustomers'          : lambda t: ( (0.0) if ( t  <=  self.starttime ) else (self.memoize('advertisingCustomers',t-self.dt) + self.dt * ( self.memoize('advCustIn',t-self.dt) )) ),
         'customers'          : lambda t: ( (self.memoize('initialCustomers', t)) if ( t  <=  self.starttime ) else (self.memoize('customers',t-self.dt) + self.dt * ( self.memoize('customerAcquisition',t-self.dt) )) ),
-        'profit'          : lambda t: ( ( - self.memoize('initialInvestmentInService', t)) if ( t  <=  self.starttime ) else (self.memoize('profit',t-self.dt) + self.dt * ( self.memoize('earnings',t-self.dt) - ( self.memoize('spending',t-self.dt) ) )) ),
-        'referralCustomers'          : lambda t: ( (0.0) if ( t  <=  self.starttime ) else (self.memoize('referralCustomers',t-self.dt) + self.dt * ( self.memoize('referralCustIn',t-self.dt) )) ),
+        'potentialCustomers'          : lambda t: ( (self.memoize('initialPotentialCustomers', t)) if ( t  <=  self.starttime ) else (self.memoize('potentialCustomers',t-self.dt) + self.dt * ( -1 * ( self.memoize('customerAcquisition',t-self.dt) ) )) ),
         
     
         # Flows
-        'advCustIn'             : lambda t: max([0 , self.memoize('acquisitionThroughAdvertising', t)]),
-        'customerAcquisition'             : lambda t: max([0 , self.memoize('acquisitionThroughAdvertising', t) + self.memoize('acquisitionThroughReferrals', t)]),
-        'earnings'             : lambda t: max([0 , self.memoize('serviceMargin', t) * self.memoize('serviceFee', t) * self.memoize('customers', t)]),
-        'referralCustIn'             : lambda t: max([0 , self.memoize('acquisitionThroughReferrals', t)]),
-        'spending'             : lambda t: max([0 , ( (self.memoize('acquisitionThroughReferrals', t) * ( self.memoize('referralFreeMonths', t) * self.memoize('serviceFee', t) / self.memoize('referrals', t) ) + self.memoize('referralAdvertisingCost', t) + self.memoize('classicalAdvertisingCost', t)) if (self.memoize('referrals', t) > 0.0) else (self.memoize('classicalAdvertisingCost', t)) )]),
+        'customerAcquisition'             : lambda t: max([0 , self.memoize('acquisitionThroughAdvertising', t) + self.memoize('acquisitionThroughWordOfMouth', t)]),
         
     
         # converters
-        'acquisitionThroughAdvertising'      : lambda t: self.memoize('potentialCustomersReachedThroughAdvertising', t) * self.memoize('advertisingSuccess%', t) / 100.0,
-        'acquisitionThroughReferrals'      : lambda t: self.memoize('referrals', t) * self.memoize('customers', t) * ( 1.0 - self.memoize('marketSaturation%', t) / 100.0 ) * self.memoize('referralProgramAdoption%', t) / 100.0,
-        'advertisingSuccess%'      : lambda t: 0.1,
-        'classicalAdvertisingCost'      : lambda t: 10000.0,
+        'acquisitionThroughAdvertising'      : lambda t: self.memoize('consumersReachedThroughAdvertising', t) * self.memoize('advertisingSuccess', t),
+        'acquisitionThroughWordOfMouth'      : lambda t: self.memoize('consumersReachedThroughWordOfMouth', t) * self.memoize('wordOfMouthSuccess', t) * ( 1.0 - self.memoize('marketSaturation', t) ),
+        'advertisingBudget'      : lambda t: 100.0,
+        'advertisingSuccess'      : lambda t: 0.1,
+        'consumersReachedPerEuro'      : lambda t: 100.0,
+        'consumersReachedThroughAdvertising'      : lambda t: self.memoize('consumersReachedPerEuro', t) * self.memoize('advertisingBudget', t) * ( 1.0 - self.memoize('marketSaturation', t) ),
+        'consumersReachedThroughWordOfMouth'      : lambda t: self.memoize('customers', t) * self.memoize('contactRate', t),
+        'contactRate'      : lambda t: 10.0,
         'initialCustomers'      : lambda t: 0.0,
-        'initialInvestmentInService'      : lambda t: 1000000.0,
-        'marketSaturation%'      : lambda t: 100.0 * self.memoize('customers', t) / self.memoize('targetMarket', t),
-        'personsReachedPerEuro'      : lambda t: 100.0,
-        'potentialCustomersReachedThroughAdvertising'      : lambda t: self.memoize('personsReachedPerEuro', t) * self.memoize('classicalAdvertisingCost', t) * self.memoize('targetCustomerDilution%', t) / 100.0 * ( 1.0 - self.memoize('marketSaturation%', t) / 100.0 ),
-        'referralAdvertisingCost'      : lambda t: 10000.0,
-        'referralFreeMonths'      : lambda t: 3.0,
-        'referralProgramAdoption%'      : lambda t: 30.0,
-        'referrals'      : lambda t: 0.0,
-        'serviceFee'      : lambda t: 10.0,
-        'serviceMargin'      : lambda t: 0.5,
-        'targetCustomerDilution%'      : lambda t: 80.0,
-        'targetMarket'      : lambda t: 6000000.0,
+        'initialPotentialCustomers'      : lambda t: 60000.0,
+        'marketSaturation'      : lambda t: self.memoize('customers', t) / ( self.memoize('potentialCustomers', t) + self.memoize('customers', t) ),
+        'wordOfMouthSuccess'      : lambda t: 0.01,
         
     
         # gf
@@ -123,9 +112,9 @@ class simulation_model():
                 
         self.dimensions_order = {}     
     
-        self.stocks = ['advertisingCustomers',   'customers',   'profit',   'referralCustomers'  ]
-        self.flows = ['advCustIn',   'customerAcquisition',   'earnings',   'referralCustIn',   'spending'  ]
-        self.converters = ['acquisitionThroughAdvertising',   'acquisitionThroughReferrals',   'advertisingSuccess%',   'classicalAdvertisingCost',   'initialCustomers',   'initialInvestmentInService',   'marketSaturation%',   'personsReachedPerEuro',   'potentialCustomersReachedThroughAdvertising',   'referralAdvertisingCost',   'referralFreeMonths',   'referralProgramAdoption%',   'referrals',   'serviceFee',   'serviceMargin',   'targetCustomerDilution%',   'targetMarket'  ]
+        self.stocks = ['customers',   'potentialCustomers'  ]
+        self.flows = ['customerAcquisition'  ]
+        self.converters = ['acquisitionThroughAdvertising',   'acquisitionThroughWordOfMouth',   'advertisingBudget',   'advertisingSuccess',   'consumersReachedPerEuro',   'consumersReachedThroughAdvertising',   'consumersReachedThroughWordOfMouth',   'contactRate',   'initialCustomers',   'initialPotentialCustomers',   'marketSaturation',   'wordOfMouthSuccess'  ]
         self.gf = []
         self.constants= []
         self.events = [

@@ -56,9 +56,9 @@ def LERP(x,points):
 class simulation_model():
     def __init__(self):
         # Simulation Settings
-        self.dt = 1.0
-        self.starttime = 0.0
-        self.stoptime = 60.0
+        self.dt = 1
+        self.starttime = 1.0
+        self.stoptime = 24.0
         self.units = 'Months'
         self.method = 'Euler'
         self.equations = {
@@ -66,51 +66,101 @@ class simulation_model():
         # Stocks
         
     
-        'advertisingCustomers'          : lambda t: ( (0.0) if ( t  <=  self.starttime ) else (self.memoize('advertisingCustomers',t-self.dt) + self.dt * ( self.memoize('advCustIn',t-self.dt) )) ),
-        'customers'          : lambda t: ( (self.memoize('initialCustomers', t)) if ( t  <=  self.starttime ) else (self.memoize('customers',t-self.dt) + self.dt * ( self.memoize('customerAcquisition',t-self.dt) )) ),
-        'profit'          : lambda t: ( ( - self.memoize('initialInvestmentInService', t)) if ( t  <=  self.starttime ) else (self.memoize('profit',t-self.dt) + self.dt * ( self.memoize('earnings',t-self.dt) - ( self.memoize('spending',t-self.dt) ) )) ),
-        'referralCustomers'          : lambda t: ( (0.0) if ( t  <=  self.starttime ) else (self.memoize('referralCustomers',t-self.dt) + self.dt * ( self.memoize('referralCustIn',t-self.dt) )) ),
+        'cash.cash'          : lambda t: ( (1000.0) if ( t  <=  self.starttime ) else (self.memoize('cash.cash',t-self.dt) + self.dt * ( self.memoize('cash.cashIn',t-self.dt) - ( self.memoize('cash.cashOut',t-self.dt) ) )) ),
+        'cost.professionalStaff'          : lambda t: ( (0) if ( t  <=  self.starttime ) else (self.memoize('cost.professionalStaff',t-self.dt) + self.dt * 0) ),
+        'kpi.professionalStaff'          : lambda t: ( (0) if ( t  <=  self.starttime ) else (self.memoize('kpi.professionalStaff',t-self.dt) + self.dt * 0) ),
+        'kpi.projects'          : lambda t: ( (0) if ( t  <=  self.starttime ) else (self.memoize('kpi.projects',t-self.dt) + self.dt * 0) ),
+        'projects.projects'          : lambda t: ( (320.0) if ( t  <=  self.starttime ) else (self.memoize('projects.projects',t-self.dt) + self.dt * ( self.memoize('projects.winningProjects',t-self.dt) - ( self.memoize('projects.deliveringProjects',t-self.dt) ) )) ),
+        'projects.proposals'          : lambda t: ( (320.0) if ( t  <=  self.starttime ) else (self.memoize('projects.proposals',t-self.dt) + self.dt * ( self.memoize('projects.prospectingProjects',t-self.dt) - ( self.memoize('projects.winningProjects',t-self.dt) ) )) ),
+        'revenue.receivables'          : lambda t: ( (0.0) if ( t  <=  self.starttime ) else (self.memoize('revenue.receivables',t-self.dt) + self.dt * ( self.memoize('revenue.makingRevenue',t-self.dt) - ( self.memoize('revenue.collectingRevenue',t-self.dt) ) )) ),
+        'staff.professionalStaff'          : lambda t: ( (200.0) if ( t  <=  self.starttime ) else (self.memoize('staff.professionalStaff',t-self.dt) + self.dt * ( self.memoize('staff.staffArriving',t-self.dt) )) ),
+        'staff.staffInRecruitment'          : lambda t: ( (0.0) if ( t  <=  self.starttime ) else (self.memoize('staff.staffInRecruitment',t-self.dt) + self.dt * ( self.memoize('staff.hiringStaff',t-self.dt) - ( self.memoize('staff.staffArriving',t-self.dt) ) )) ),
         
     
         # Flows
-        'advCustIn'             : lambda t: max([0 , self.memoize('acquisitionThroughAdvertising', t)]),
-        'customerAcquisition'             : lambda t: max([0 , self.memoize('acquisitionThroughAdvertising', t) + self.memoize('acquisitionThroughReferrals', t)]),
-        'earnings'             : lambda t: max([0 , self.memoize('serviceMargin', t) * self.memoize('serviceFee', t) * self.memoize('customers', t)]),
-        'referralCustIn'             : lambda t: max([0 , self.memoize('acquisitionThroughReferrals', t)]),
-        'spending'             : lambda t: max([0 , ( (self.memoize('acquisitionThroughReferrals', t) * ( self.memoize('referralFreeMonths', t) * self.memoize('serviceFee', t) / self.memoize('referrals', t) ) + self.memoize('referralAdvertisingCost', t) + self.memoize('classicalAdvertisingCost', t)) if (self.memoize('referrals', t) > 0.0) else (self.memoize('classicalAdvertisingCost', t)) )]),
+        'cash.cashIn'             : lambda t: max([0 , self.memoize('revenue.collectingRevenue', t)]),
+        'cash.cashOut'             : lambda t: max([0 , self.memoize('cost.cost', t)]),
+        'projects.deliveringProjects'             : lambda t: max([0 , min([self.memoize('projects.projectDeliveryRate', t) , self.memoize('projects.projects', t)])]),
+        'projects.prospectingProjects'             : lambda t: max([0 , self.memoize('projects.projectProposalRate', t)]),
+        'projects.winningProjects'             : lambda t: max([0 , min([self.delay( self.memoize('projects.prospectingProjects', ( t - (self.memoize('projects.projectAcquisitionDuration', t)) )),self.memoize('projects.projectAcquisitionDuration', t),160.0,t) , self.memoize('projects.proposals', t)])]),
+        'revenue.collectingRevenue'             : lambda t: max([0 , self.delay( self.memoize('revenue.makingRevenue', ( t - (self.memoize('revenue.collectionTime', t)) )),self.memoize('revenue.collectionTime', t),2816.0,t)]),
+        'revenue.makingRevenue'             : lambda t: max([0 , self.memoize('revenue.revenue', t)]),
+        'staff.hiringStaff'             : lambda t: max([0 , ( 1.0 - self.memoize('kpi.steadyGrowthPolicyOn', t) ) * self.memoize('staff.hiringRate', t) + self.memoize('kpi.steadyGrowthPolicyOn', t) * self.memoize('staff.professionalStaff', t) * self.memoize('staff.steadyGrowthRate%', t) / 100.0]),
+        'staff.staffArriving'             : lambda t: max([0 , self.delay( self.memoize('staff.hiringStaff', ( t - (self.memoize('staff.hiringDuration', t)) )),self.memoize('staff.hiringDuration', t),0.0,t)]),
         
     
         # converters
-        'acquisitionThroughAdvertising'      : lambda t: self.memoize('potentialCustomersReachedThroughAdvertising', t) * self.memoize('advertisingSuccess%', t) / 100.0,
-        'acquisitionThroughReferrals'      : lambda t: self.memoize('referrals', t) * self.memoize('customers', t) * ( 1.0 - self.memoize('marketSaturation%', t) / 100.0 ) * self.memoize('referralProgramAdoption%', t) / 100.0,
-        'advertisingSuccess%'      : lambda t: 0.1,
-        'classicalAdvertisingCost'      : lambda t: 10000.0,
-        'initialCustomers'      : lambda t: 0.0,
-        'initialInvestmentInService'      : lambda t: 1000000.0,
-        'marketSaturation%'      : lambda t: 100.0 * self.memoize('customers', t) / self.memoize('targetMarket', t),
-        'personsReachedPerEuro'      : lambda t: 100.0,
-        'potentialCustomersReachedThroughAdvertising'      : lambda t: self.memoize('personsReachedPerEuro', t) * self.memoize('classicalAdvertisingCost', t) * self.memoize('targetCustomerDilution%', t) / 100.0 * ( 1.0 - self.memoize('marketSaturation%', t) / 100.0 ),
-        'referralAdvertisingCost'      : lambda t: 10000.0,
-        'referralFreeMonths'      : lambda t: 3.0,
-        'referralProgramAdoption%'      : lambda t: 30.0,
-        'referrals'      : lambda t: 0.0,
-        'serviceFee'      : lambda t: 10.0,
-        'serviceMargin'      : lambda t: 0.5,
-        'targetCustomerDilution%'      : lambda t: 80.0,
-        'targetMarket'      : lambda t: 6000000.0,
+        'cash.cashFlow'      : lambda t: self.memoize('cash.cashIn', t) - self.memoize('cash.cashOut', t),
+        'cash.collectingRevenue'      : lambda t: 0.0,
+        'cash.cost'      : lambda t: 0.0,
+        'cash.easyTargetCash'      : lambda t: 30000.0,
+        'cash.expertTargetCash'      : lambda t: 40000.0,
+        'cash.minimumCash'      : lambda t: 23463.0,
+        'cost.cost'      : lambda t: self.memoize('cost.overheadCost', t) + self.memoize('cost.staffCost', t),
+        'cost.overheadCost'      : lambda t: 306.0,
+        'cost.staffCost'      : lambda t: ( self.memoize('cost.workplaceCost', t) + self.memoize('cost.staffSalary', t) ) * self.memoize('staff.professionalStaff', t),
+        'cost.staffSalary'      : lambda t: 80.0 / 12.0,
+        'cost.workplaceCost'      : lambda t: 1.0,
+        'kpi.acquisitionToDeliveryRatio%'      : lambda t: 100.0 * self.memoize('projects.prospectingEffort', t) / ( self.memoize('projects.prospectingEffort', t) + self.memoize('projects.projectVolume', t) ),
+        'kpi.cashFlow'      : lambda t: 0.0,
+        'kpi.cashFlowPerProfessional'      : lambda t: self.memoize('cash.cashFlow', t) / self.memoize('staff.professionalStaff', t),
+        'kpi.deliveringProjects'      : lambda t: 0.0,
+        'kpi.maxiumProjectCapacity'      : lambda t: ( 1.0 - self.memoize('kpi.acquisitionToDeliveryRatio%', t) / 100.0 ) * self.memoize('staff.professionalStaff', t),
+        'kpi.minimumBusDevAllocationOn'      : lambda t: 0.0,
+        'kpi.projectBacklog'      : lambda t: self.memoize('projects.projects', t) / self.memoize('kpi.maxiumProjectCapacity', t),
+        'kpi.projectVolume'      : lambda t: 0.0,
+        'kpi.prospectingEffort'      : lambda t: 0.0,
+        'kpi.steadyGrowthPolicyOn'      : lambda t: 0.0,
+        'kpi.targetBacklog'      : lambda t: 2.0,
+        'kpi.targetBusinessDevelopmentAllocation%'      : lambda t: ( 1.0 - self.memoize('kpi.minimumBusDevAllocationOn', t) ) * 100.0 * max([( 1.0 - self.memoize('kpi.targetProjectStaff', t) / self.memoize('staff.professionalStaff', t) ) , 0.0]) + self.memoize('kpi.minimumBusDevAllocationOn', t) * max([100.0 * ( 1.0 - self.memoize('kpi.targetProjectStaff', t) / self.memoize('staff.professionalStaff', t) ) , self.memoize('kpi.acquisitionToDeliveryRatio%', t)]),
+        'kpi.targetProjctDeliveryCapacity'      : lambda t: self.memoize('projects.projects', t) / self.memoize('kpi.targetBacklog', t),
+        'kpi.targetProjectStaff'      : lambda t: self.memoize('kpi.targetProjctDeliveryCapacity', t),
+        'kpi.utilization%'      : lambda t: 100.0 * self.memoize('projects.deliveringProjects', t) / self.memoize('kpi.maxiumProjectCapacity', t),
+        'projects.businessDevelopmentCapacity'      : lambda t: 0.0,
+        'projects.projectAcquisitionDuration'      : lambda t: 6.0,
+        'projects.projectDeliveryCapacity'      : lambda t: 0.0,
+        'projects.projectDeliveryRate'      : lambda t: self.memoize('staff.projectDeliveryCapacity', t),
+        'projects.projectProposalRate'      : lambda t: self.memoize('projects.projectVolume', t) * ( self.memoize('staff.businessDevelopmentCapacity', t) / self.memoize('projects.prospectingEffort', t) ),
+        'projects.projectVolume'      : lambda t: 16.0,
+        'projects.prospectingEffort'      : lambda t: 4.0,
+        'revenue.collectionTime'      : lambda t: 2.0,
+        'revenue.deliveringProjects'      : lambda t: 0.0,
+        'revenue.projectDeliveryFee'      : lambda t: 17.6,
+        'revenue.revenue'      : lambda t: self.memoize('revenue.projectDeliveryFee', t) * self.memoize('projects.deliveringProjects', t),
+        'staff.actualBusinessDevelopmentAllocation%'      : lambda t: self.memoize('kpi.steadyGrowthPolicyOn', t) * self.memoize('kpi.targetBusinessDevelopmentAllocation%', t) + ( 1.0 - self.memoize('kpi.steadyGrowthPolicyOn', t) ) * self.memoize('staff.businessDevelopmentAllocation%', t),
+        'staff.businessDevelopmentCapacity'      : lambda t: self.memoize('staff.workCapacity', t) * self.memoize('staff.actualBusinessDevelopmentAllocation%', t) / 100.0,
+        'staff.hiringDuration'      : lambda t: 3.0,
+        'staff.projectDeliveryCapacity'      : lambda t: self.memoize('staff.workCapacity', t) * ( 100.0 - self.memoize('staff.actualBusinessDevelopmentAllocation%', t) ) / 100.0,
+        'staff.steadyGrowthPolicyOn1'      : lambda t: 0.0,
+        'staff.steadyGrowthRate%'      : lambda t: 1.0,
+        'staff.targetBusinessDevStaff%'      : lambda t: 0.0,
+        'staff.workCapacity'      : lambda t: self.memoize('staff.professionalStaff', t) * self.memoize('staff.workMonth', t),
+        'staff.workMonth'      : lambda t: 1.0,
         
     
         # gf
+        'staff.businessDevelopmentAllocation%' : lambda t: LERP(  t , self.points['staff.businessDevelopmentAllocation%']),
+        'staff.hiringRate' : lambda t: LERP(  t , self.points['staff.hiringRate']),
         
     
         #constants
+        'cash.collectingRevenue' : lambda t: 0.0,
+        'cash.cost' : lambda t: 0.0,
+        'kpi.cashFlow' : lambda t: 0.0,
+        'kpi.deliveringProjects' : lambda t: 0.0,
+        'kpi.projectVolume' : lambda t: 0.0,
+        'kpi.prospectingEffort' : lambda t: 0.0,
+        'projects.businessDevelopmentCapacity' : lambda t: 0.0,
+        'projects.projectDeliveryCapacity' : lambda t: 0.0,
+        'revenue.deliveringProjects' : lambda t: 0.0,
+        'staff.targetBusinessDevStaff%' : lambda t: 0.0,
         
     
     
         }
     
         self.points = {
-            
+            'staff.businessDevelopmentAllocation%' :  [(1.0, 20.0), (2.0, 20.0), (3.0, 20.0), (4.0, 20.0), (5.0, 20.0), (6.0, 20.0), (7.0, 20.0), (8.0, 20.0), (9.0, 20.0), (10.0, 20.0), (11.0, 20.0), (12.0, 20.0), (13.0, 20.0), (14.0, 20.0), (15.0, 20.0), (16.0, 20.0), (17.0, 20.0), (18.0, 20.0), (19.0, 20.0), (20.0, 20.0), (21.0, 20.0), (22.0, 20.0), (23.0, 20.0), (24.0, 20.0)]  , 'staff.hiringRate' :  [(1.0, 0.0), (2.0, 0.0), (3.0, 0.0), (4.0, 0.0), (5.0, 0.0), (6.0, 0.0), (7.0, 0.0), (8.0, 0.0), (9.0, 0.0), (10.0, 0.0), (11.0, 0.0), (12.0, 0.0), (13.0, 0.0), (14.0, 0.0), (15.0, 0.0), (16.0, 0.0), (17.0, 0.0), (18.0, 0.0), (19.0, 0.0), (20.0, 0.0), (21.0, 0.0), (22.0, 0.0), (23.0, 0.0), (24.0, 0.0)]  , 
         }
     
     
@@ -123,11 +173,11 @@ class simulation_model():
                 
         self.dimensions_order = {}     
     
-        self.stocks = ['advertisingCustomers',   'customers',   'profit',   'referralCustomers'  ]
-        self.flows = ['advCustIn',   'customerAcquisition',   'earnings',   'referralCustIn',   'spending'  ]
-        self.converters = ['acquisitionThroughAdvertising',   'acquisitionThroughReferrals',   'advertisingSuccess%',   'classicalAdvertisingCost',   'initialCustomers',   'initialInvestmentInService',   'marketSaturation%',   'personsReachedPerEuro',   'potentialCustomersReachedThroughAdvertising',   'referralAdvertisingCost',   'referralFreeMonths',   'referralProgramAdoption%',   'referrals',   'serviceFee',   'serviceMargin',   'targetCustomerDilution%',   'targetMarket'  ]
-        self.gf = []
-        self.constants= []
+        self.stocks = ['cash.cash',   'cost.professionalStaff',   'kpi.professionalStaff',   'kpi.projects',   'projects.projects',   'projects.proposals',   'revenue.receivables',   'staff.professionalStaff',   'staff.staffInRecruitment'  ]
+        self.flows = ['cash.cashIn',   'cash.cashOut',   'projects.deliveringProjects',   'projects.prospectingProjects',   'projects.winningProjects',   'revenue.collectingRevenue',   'revenue.makingRevenue',   'staff.hiringStaff',   'staff.staffArriving'  ]
+        self.converters = ['cash.cashFlow',   'cash.collectingRevenue',   'cash.cost',   'cash.easyTargetCash',   'cash.expertTargetCash',   'cash.minimumCash',   'cost.cost',   'cost.overheadCost',   'cost.staffCost',   'cost.staffSalary',   'cost.workplaceCost',   'kpi.acquisitionToDeliveryRatio%',   'kpi.cashFlow',   'kpi.cashFlowPerProfessional',   'kpi.deliveringProjects',   'kpi.maxiumProjectCapacity',   'kpi.minimumBusDevAllocationOn',   'kpi.projectBacklog',   'kpi.projectVolume',   'kpi.prospectingEffort',   'kpi.steadyGrowthPolicyOn',   'kpi.targetBacklog',   'kpi.targetBusinessDevelopmentAllocation%',   'kpi.targetProjctDeliveryCapacity',   'kpi.targetProjectStaff',   'kpi.utilization%',   'projects.businessDevelopmentCapacity',   'projects.projectAcquisitionDuration',   'projects.projectDeliveryCapacity',   'projects.projectDeliveryRate',   'projects.projectProposalRate',   'projects.projectVolume',   'projects.prospectingEffort',   'revenue.collectionTime',   'revenue.deliveringProjects',   'revenue.projectDeliveryFee',   'revenue.revenue',   'staff.actualBusinessDevelopmentAllocation%',   'staff.businessDevelopmentCapacity',   'staff.hiringDuration',   'staff.projectDeliveryCapacity',   'staff.steadyGrowthPolicyOn1',   'staff.steadyGrowthRate%',   'staff.targetBusinessDevStaff%',   'staff.workCapacity',   'staff.workMonth'  ]
+        self.gf = ['staff.businessDevelopmentAllocation%',   'staff.hiringRate'  ]
+        self.constants= ['cash.collectingRevenue',   'cash.cost',   'kpi.cashFlow',   'kpi.deliveringProjects',   'kpi.projectVolume',   'kpi.prospectingEffort',   'projects.businessDevelopmentCapacity',   'projects.projectDeliveryCapacity',   'revenue.deliveringProjects',   'staff.targetBusinessDevStaff%'  ]
         self.events = [
             ]
     
