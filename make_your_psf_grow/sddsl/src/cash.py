@@ -1,19 +1,19 @@
 from BPTK_Py import sd_functions as sd
-from .module import Module
+from BPTK_Py import Module
 
 class Cash(Module):
     def __init__(self, model, name):
         super().__init__(model, name)
-        self.cashFlow = self.model.converter(self.module_element("cashFlow"))
+        self.cashFlow = self.converter("cashFlow")
         
     
     def initialize(self,cost,revenue):
-        cash = self.model.stock(self.module_element("cash"))
-        cashIn = self.model.flow(self.module_element("cashIn"))
-        cashOut= self.model.flow(self.module_element("cashOut"))
-        minimumCash = self.model.converter(self.module_element("minimumCash"))
-        easyTargetCash = self.model.converter(self.module_element("easyTargetCash"))
-        expertTargetCash = self.model.converter(self.module_element("expertTargetCash"))
+        cash = self.stock("cash")
+        cashIn = self.flow("cashIn")
+        cashOut= self.flow("cashOut")
+        minimumCash = self.converter("minimumCash")
+        easyTargetCash = self.converter("easyTargetCash")
+        expertTargetCash = self.converter("expertTargetCash")
 
         cash.initial_value=1000.0
         cashIn.equation=revenue.collectingRevenue

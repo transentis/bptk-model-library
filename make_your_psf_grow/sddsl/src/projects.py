@@ -1,5 +1,5 @@
 from BPTK_Py import sd_functions as sd
-from .module import Module
+from BPTK_Py import Module
 
 class Projects(Module):
     def __init__(self, model, name):
@@ -7,18 +7,18 @@ class Projects(Module):
 
         # Exports
         
-        self.projects = self.model.stock(self.module_element("projects"))
-        self.deliveringProjects = self.model.flow(self.module_element("deliveringProjects"))
-        self.prospectingEffort = self.model.converter(self.module_element("prospectingEffort"))
-        self.projectVolume = self.model.converter(self.module_element("projectVolume"))
+        self.projects = self.stock("projects")
+        self.deliveringProjects = self.flow("deliveringProjects")
+        self.prospectingEffort = self.converter("prospectingEffort")
+        self.projectVolume = self.converter("projectVolume")
     
     def initialize(self,staff):
-        proposals = self.model.stock(self.module_element("proposals"))
-        prospectingProjects = self.model.flow(self.module_element("prospectingProjects"))
-        winningProjects = self.model.flow(self.module_element("winningProjects"))
-        proposalRate = self.model.converter(self.module_element("proposalRate"))
-        projectAcquisitionDuration = self.model.converter(self.module_element("projectAcquisitionDuration"))
-        projectDeliveryRate = self.model.converter(self.module_element("projectDeliveryRate"))
+        proposals = self.stock("proposals")
+        prospectingProjects = self.flow("prospectingProjects")
+        winningProjects = self.flow("winningProjects")
+        proposalRate = self.converter("proposalRate")
+        projectAcquisitionDuration = self.converter("projectAcquisitionDuration")
+        projectDeliveryRate = self.converter("projectDeliveryRate")
 
         self.projects.initial_value = 320.0
         self.projects.equation = -self.deliveringProjects+winningProjects

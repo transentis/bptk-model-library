@@ -1,26 +1,26 @@
 from BPTK_Py import sd_functions as sd
-from .module import Module
+from BPTK_Py import Module
 
 class Kpi(Module):
     def __init__(self, model, name):
         super().__init__(model, name)
-        self.targetBusinessDevelopmentAllocationPct = self.model.converter(self.module_element("targetBusinessDevelopmentAllocation%"))
-        self.steadyGrowthPolicyOn = self.model.converter(self.module_element("steadyGrowthPolicyOn"))
+        self.targetBusinessDevelopmentAllocationPct = self.converter("targetBusinessDevelopmentAllocation%")
+        self.steadyGrowthPolicyOn = self.converter("steadyGrowthPolicyOn")
 
     
     def initialize(self, staff, cash, projects):
         #kpi
-        cashFlowPerProfessional = self.model.converter(self.module_element("cashFlowPerProfessional"))
-        utilizationPct = self.model.converter(self.module_element("utilization%"))
-        projectBacklog = self.model.converter(self.module_element("projectBacklog"))
-        maximumProjectCacpacity = self.model.converter(self.module_element("maximumProjectCapacity"))
-        acquisitionToDeliveryRatioPct = self.model.converter(self.module_element("acquisitionToDeliveryRatio%"))
-        minimumBusDevAllocationOn = self.model.converter(self.module_element("minimumBusDevAllocationOn"))    
+        cashFlowPerProfessional = self.converter("cashFlowPerProfessional")
+        utilizationPct = self.converter("utilization%")
+        projectBacklog = self.converter("projectBacklog")
+        maximumProjectCacpacity = self.converter("maximumProjectCapacity")
+        acquisitionToDeliveryRatioPct = self.converter("acquisitionToDeliveryRatio%")
+        minimumBusDevAllocationOn = self.converter("minimumBusDevAllocationOn")    
 
         #kpi targets
-        targetProjectStaff = self.model.converter(self.module_element("targetProjectStaff"))
-        targetProjectDeliveryCapacity = self.model.converter(self.module_element("targetProjectDeliveryCapacity"))
-        targetBacklog = self.model.converter(self.module_element("targetBacklog"))
+        targetProjectStaff = self.converter("targetProjectStaff")
+        targetProjectDeliveryCapacity = self.converter("targetProjectDeliveryCapacity")
+        targetBacklog = self.converter("targetBacklog")
 
         cashFlowPerProfessional.equation = cash.cashFlow/staff.professionalStaff
         utilizationPct.equation = (100.0*projects.deliveringProjects)/maximumProjectCacpacity

@@ -1,19 +1,19 @@
 from BPTK_Py import sd_functions as sd
-from .module import Module
+from BPTK_Py import Module
 
 class Revenue(Module):
     def __init__(self, model, name):
         super().__init__(model, name)
 
         # Exports
-        self.collectingRevenue = self.model.flow(self.module_element("collectingRevenue"))
+        self.collectingRevenue = self.flow("collectingRevenue")
     
     def initialize(self,projects):
-        receivables = self.model.stock(self.module_element("receivables"))
-        makingRevenue = self.model.flow(self.module_element("makingRevenue"))
-        collectionTime = self.model.converter(self.module_element("collectionTime"))
-        revenue = self.model.converter(self.module_element("revenue"))
-        projectDeliveryFee = self.model.converter(self.module_element("projectDeliveryFee"))
+        receivables = self.stock("receivables")
+        makingRevenue = self.flow("makingRevenue")
+        collectionTime = self.converter("collectionTime")
+        revenue = self.converter("revenue")
+        projectDeliveryFee = self.converter("projectDeliveryFee")
 
         receivables.initial_value = 160*17.6*2
         receivables.equation = makingRevenue-self.collectingRevenue

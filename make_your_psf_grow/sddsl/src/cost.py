@@ -1,17 +1,17 @@
 from BPTK_Py import sd_functions as sd
-from .module import Module
+from BPTK_Py import Module
 
 class Cost(Module):
     def __init__(self, model, name):
         super().__init__(model, name)
         #Exports
-        self.cost = self.model.converter(self.module_element("cost"))
+        self.cost = self.converter("cost")
     
     def initialize(self,staff):
-        staffSalary = self.model.converter(self.module_element("staffSalary"))
-        workplaceCost = self.model.converter(self.module_element("workplaceCost"))
-        staffCost = self.model.converter(self.module_element("staffCost"))
-        overheadCost = self.model.converter(self.module_element("overheadCost"))
+        staffSalary = self.converter("staffSalary")
+        workplaceCost = self.converter("workplaceCost")
+        staffCost = self.converter("staffCost")
+        overheadCost = self.converter("overheadCost")
 
         workplaceCost.equation=1.0
         staffSalary.equation = 80.0/12
