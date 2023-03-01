@@ -1,2 +1,0 @@
-BPTK-Py==1.5.3
-jupyterlab
